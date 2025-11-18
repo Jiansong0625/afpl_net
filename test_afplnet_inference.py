@@ -209,8 +209,9 @@ def format_afplnet_output(pred_dict, cfg):
             sort_idx = np.argsort(points[:, 1])
             points = points[sort_idx]
             
-            # Append as pure numpy array
-            formatted_lanes.append(points)
+            # Append in dict format for compatibility with visualizer
+            # write_output_culane_format handles both formats, but view_single_img_lane needs dict
+            formatted_lanes.append({'points': points})
         
         formatted_batch.append(formatted_lanes)
     
