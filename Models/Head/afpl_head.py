@@ -277,13 +277,13 @@ class AFPLHead(nn.Module):
                 continue
             
             # Get predictions for valid points
-            scores = final_score[valid_mask].cpu().numpy()
-            thetas = theta_pred[b, 0, valid_mask].cpu().numpy()
-            rs = r_pred[b, 0, valid_mask].cpu().numpy()
+            scores = final_score[valid_mask].detach().cpu().numpy()
+            thetas = theta_pred[b, 0, valid_mask].detach().cpu().numpy()
+            rs = r_pred[b, 0, valid_mask].detach().cpu().numpy()
             
             # Get predicted pole for this image
-            pole_x = pred_dict['pole_xy'][b, 0].cpu().item()
-            pole_y = pred_dict['pole_xy'][b, 1].cpu().item()
+            pole_x = pred_dict['pole_xy'][b, 0].detach().cpu().item()
+            pole_y = pred_dict['pole_xy'][b, 1].detach().cpu().item()
             
             # Angular clustering: group points with similar θ and convert polar to Cartesian
             lanes = self._cluster_by_angle(thetas, rs, scores, pole_x, pole_y, output_format)
