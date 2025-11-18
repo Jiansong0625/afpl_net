@@ -54,10 +54,11 @@ class AFPLNet(nn.Module):
         Returns:
             Dictionary with predictions from AFPL head
         """
-        # Extract input image
-        if self.training:
+        # Extract input image - handle both dict and tensor inputs
+        if isinstance(sample_batch, dict):
             x = sample_batch['img']
         else:
+            # Direct tensor input (typically during inference)
             x = sample_batch
             
         # Backbone: extract multi-scale features
@@ -91,4 +92,4 @@ class AFPLNet(nn.Module):
         self.eval()
         with torch.no_grad():
             pred_dict = self.forward(img_tensor)
-        return pred_dict['lanes']
+        return pred_dict['lane_list']

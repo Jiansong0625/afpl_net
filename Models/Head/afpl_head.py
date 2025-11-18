@@ -131,9 +131,11 @@ class AFPLHead(nn.Module):
         Returns:
             Dictionary containing predictions from all three heads
         """
-        # Use the highest resolution feature map (P3)
-        # For multi-scale, we could process all levels
-        feat = feats[0]  # Assuming P3 is first
+        # Use the highest resolution feature map (P3) for best lane detection
+        # P3 has stride 8, providing good balance between resolution and semantic info
+        # Note: Multi-scale detection could be added by processing all feature levels
+        # and fusing predictions, but single-scale at P3 is efficient and effective
+        feat = feats[0]  # P3: highest resolution (stride 8)
         pole_xy = self._predict_pole(feat)
         
         # Three parallel predictions
@@ -142,8 +144,8 @@ class AFPLHead(nn.Module):
         polar_pred = self.polar_reg_head(feat)  # [B, 2, H, W]
         
         # Normalize polar predictions
-        # θ: normalize to [-π, π]
-        # r: keep as raw output, will be interpreted as distance in pixels
+        # θ: normalize to [-π, π] using tanh
+        # r: ensure non-negative using ReLU
         theta_pred = torch.tanh(polar_pred[:, 0:1, ...]) * math.pi  # [-π, π]
         r_pred = F.relu(polar_pred[:, 1:2, ...])  # [0, ∞)
         
@@ -245,6 +247,7 @@ class AFPLHead(nn.Module):
             List[List[np.ndarray]] if output_format='numpy' - batch of lanes as arrays [N, 2]
             List[List[dict]] if output_format='dict' - batch of lanes with scores
         """
+        # Apply sigmoid to get probabilities
         cls_pred = torch.sigmoid(pred_dict['cls_pred'])
         centerness_pred = torch.sigmoid(pred_dict['centerness_pred'])
         theta_pred = pred_dict['theta_pred']
@@ -255,6 +258,7 @@ class AFPLHead(nn.Module):
         
         for b in range(batch_size):
             # Compute final score: classification × centerness
+            # This combines "is it a lane?" with "how central is this point?"
             final_score = cls_pred[b, 0] * centerness_pred[b, 0]  # [H, W]
             
             # Filter low-confidence points
@@ -266,6 +270,11 @@ class AFPLHead(nn.Module):
             
             # Get coordinates of valid points
             y_coords, x_coords = torch.where(valid_mask)
+            
+            # Safety check for empty predictions
+            if len(y_coords) == 0:
+                lanes_batch.append([])
+                continue
             
             # Get predictions for valid points
             scores = final_score[valid_mask].cpu().numpy()
