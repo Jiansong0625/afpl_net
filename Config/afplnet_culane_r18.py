@@ -16,7 +16,7 @@ import cv2
 
 ############### dataset choice ######################
 dataset = 'culane'
-data_root = 'E:\PolarRCNN-master\Culane'
+data_root = r'E:\PolarRCNN-master\Culane'  # Use raw string to avoid escape sequence warning
 
 ############### image parameter #########################
 ori_img_h = 590
@@ -104,5 +104,5 @@ is_nmsfree = True  # AFPL-Net is always NMS-free
 nms_thres = 50  # Not used, but kept for compatibility
 conf_thres_nmsfree = conf_thres
 
-centerness_debug_dir = r"E:\PolarRCNN-master\Debug\centerness"
-enable_centerness_debug = False
+centerness_debug_dir = r"E:\PolarRCNN-master\Debug\centerness"  # Debug output directory
+enable_centerness_debug = False  # Set to True to save centerness visualizations

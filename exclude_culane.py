@@ -7,7 +7,7 @@ from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
         
 
-root_path = 'E:\PolarRCNN-master\Culane' #changed to your real dataset path
+root_path = r'E:\PolarRCNN-master\Culane'  # Use raw string to avoid escape sequence warning - changed to your real dataset path
 txt_ori = "train_gt.txt"
 txt_new = "train_gt_new.txt"
 list_path = os.path.join(root_path, 'list', txt_ori)
