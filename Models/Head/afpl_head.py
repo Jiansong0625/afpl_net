@@ -281,28 +281,29 @@ class AFPLHead(nn.Module):
             thetas = theta_pred[b, 0, valid_mask].cpu().numpy()
             rs = r_pred[b, 0, valid_mask].cpu().numpy()
             
-            # Convert feature map coordinates to image coordinates
-            x_img = x_coords.cpu().numpy() * downsample_factor
-            y_img = y_coords.cpu().numpy() * downsample_factor
+            # Get predicted pole for this image
+            pole_x = pred_dict['pole_xy'][b, 0].cpu().item()
+            pole_y = pred_dict['pole_xy'][b, 1].cpu().item()
             
-            # Angular clustering: group points with similar θ
-            lanes = self._cluster_by_angle(thetas, rs, x_img, y_img, scores, output_format)
+            # Angular clustering: group points with similar θ and convert polar to Cartesian
+            lanes = self._cluster_by_angle(thetas, rs, scores, pole_x, pole_y, output_format)
             lanes_batch.append(lanes)
         
         return lanes_batch
     
-    def _cluster_by_angle(self, thetas, rs, x_coords, y_coords, scores, output_format='numpy'):
+    def _cluster_by_angle(self, thetas, rs, scores, pole_x, pole_y, output_format='numpy'):
         """
-        Cluster points by angle using DBSCAN
+        Cluster points by angle using DBSCAN and convert polar to Cartesian coordinates
         
-        Points with similar θ belong to the same lane.
+        Points with similar θ belong to the same lane. The polar coordinates (θ, r) are
+        converted to Cartesian coordinates (x, y) using the predicted pole position.
         
         Args:
             thetas: Angle predictions [N]
             rs: Radius predictions [N]
-            x_coords: Image x coordinates [N]
-            y_coords: Image y coordinates [N]
             scores: Confidence scores [N]
+            pole_x: Predicted pole x coordinate (float)
+            pole_y: Predicted pole y coordinate (float)
             output_format: 'numpy' for inference, 'dict' for training/debugging
             
         Returns:
@@ -333,9 +334,13 @@ class AFPLHead(nn.Module):
             # Get points in this cluster
             cluster_thetas = thetas[cluster_mask]
             cluster_rs = rs[cluster_mask]
-            cluster_x = x_coords[cluster_mask]
-            cluster_y = y_coords[cluster_mask]
             cluster_scores = scores[cluster_mask]
+            
+            # Convert polar coordinates (θ, r) to Cartesian (x, y) using predicted pole
+            # x = pole_x + r * cos(θ)
+            # y = pole_y + r * sin(θ)
+            cluster_x = pole_x + cluster_rs * np.cos(cluster_thetas)
+            cluster_y = pole_y + cluster_rs * np.sin(cluster_thetas)
             
             # Sort by y coordinate (top to bottom) for CULane format compatibility
             sort_idx = np.argsort(cluster_y)
