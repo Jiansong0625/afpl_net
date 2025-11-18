@@ -62,19 +62,30 @@ class CULaneEvaluator(BaseEvaluator):
             write_output_culane_format(lanes, out_path, self.ori_img_h, self.ori_img_w, self.cut_height)
 
     def view_output(self, outputs, file_names, ori_imgs):
-        line_paras_batch = outputs['anchor_embeddings'].copy()
-        line_paras_batch[..., 0] *= math.pi
-        line_paras_batch[..., 1] *= self.img_w
         lanes_list = outputs['lane_list']
-        for lanes, line_paras, file_name, ori_img in zip(lanes_list, line_paras_batch, file_names, ori_imgs):
+        
+        # Check if anchor_embeddings exists (for Polar R-CNN compatibility)
+        # AFPL-Net is anchor-free and doesn't have anchor_embeddings
+        has_anchors = 'anchor_embeddings' in outputs
+        if has_anchors:
+            line_paras_batch = outputs['anchor_embeddings'].copy()
+            line_paras_batch[..., 0] *= math.pi
+            line_paras_batch[..., 1] *= self.img_w
+        
+        for i, (lanes, file_name, ori_img) in enumerate(zip(lanes_list, file_names, ori_imgs)):
             ori_img = ori_img.numpy()
             ori_img = cv2.cvtColor(ori_img, cv2.COLOR_RGB2BGR)
             out_path_pred = os.path.join(self.view_path, file_name.replace('.jpg', '_pred.jpg'))
-            out_path_anchor = os.path.join(self.view_path, file_name.replace('.jpg', '_anchor.jpg'))
+            
+            # Save lane prediction visualization
             plot_img = super().view_single_img_lane(ori_img, lanes)
             cv2.imwrite(out_path_pred, plot_img)
-            plot_img = super().view_single_img_line(ori_img, line_paras)
-            cv2.imwrite(out_path_anchor, plot_img)
+            
+            # Save anchor visualization only if anchors exist (Polar R-CNN)
+            if has_anchors:
+                out_path_anchor = os.path.join(self.view_path, file_name.replace('.jpg', '_anchor.jpg'))
+                plot_img = super().view_single_img_line(ori_img, line_paras_batch[i])
+                cv2.imwrite(out_path_anchor, plot_img)
 
     def evaluate(self, is_sequential=False):
         if self.is_val:
