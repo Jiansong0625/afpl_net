@@ -8,8 +8,17 @@ class OverallLoss(nn.Module):
         super().__init__()
         # Check if using AFPL-Net (single-stage)
         if hasattr(cfg, 'cfg_name') and 'afplnet' in cfg.cfg_name.lower():
-            from .afpl_loss import AFPLLoss
-            self.afpl_loss = AFPLLoss(cfg)
+            # Choose between original and enhanced AFPL loss
+            use_enhanced_loss = getattr(cfg, 'use_adaptive_focal_loss', False) or \
+                              getattr(cfg, 'use_enhanced_regression_loss', False)
+            
+            if use_enhanced_loss:
+                from .afpl_loss_enhanced import EnhancedAFPLLoss
+                self.afpl_loss = EnhancedAFPLLoss(cfg)
+            else:
+                from .afpl_loss import AFPLLoss
+                self.afpl_loss = AFPLLoss(cfg)
+            
             self.is_afpl = True
         else:
             # Two-stage Polar R-CNN losses

@@ -13,6 +13,7 @@ from torch import nn
 from .Backbone.build import build_backbone
 from .Neck.build import build_neck
 from .Head.afpl_head import AFPLHead
+from .Head.afpl_head_multiscale import MultiScaleAFPLHead
 
 
 class AFPLNet(nn.Module):
@@ -40,8 +41,12 @@ class AFPLNet(nn.Module):
         # Neck: FPN for multi-scale features
         self.neck = build_neck(cfg)
         
-        # AFPL Head: Single-stage detection head
-        self.afpl_head = AFPLHead(cfg)
+        # AFPL Head: Choose between original and multi-scale version
+        use_multiscale = getattr(cfg, 'use_multiscale_head', False)
+        if use_multiscale:
+            self.afpl_head = MultiScaleAFPLHead(cfg)
+        else:
+            self.afpl_head = AFPLHead(cfg)
         
     def forward(self, sample_batch):
         """
