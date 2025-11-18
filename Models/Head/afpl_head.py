@@ -6,6 +6,10 @@ anchor-free lane detection using polar coordinates:
 1. Classification Head: Predicts if a pixel belongs to any lane line
 2. Centerness Head: Predicts the quality of the lane point
 3. Polar Regression Head: Predicts (θ, r) polar coordinates relative to global pole
+
+During inference, the polar coordinates (θ, r) are converted to Cartesian coordinates
+(x, y) using the predicted pole position, ensuring that the regression predictions
+directly influence the final lane point positions.
 """
 
 import math
