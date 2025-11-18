@@ -3,9 +3,9 @@ cfg_name = 'polarrcnn_culane_r18'
 import math
 import cv2
 
-############### dataset choise ######################
+############### dataset choice ######################
 dataset =  'culane'
-data_root = 'E:\PolarRCNN-master\Culane' 
+data_root = r'E:\PolarRCNN-master\Culane'  # Use raw string to avoid escape sequence warning 
 
 ############### image parameter #########################
 ori_img_h =  590

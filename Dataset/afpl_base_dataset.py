@@ -143,15 +143,19 @@ class AFPLBaseTrSet(Dataset):
                 cv2.line(lane_mask, pt1, pt2, 1, thickness=thickness)
             cls_gt = np.maximum(cls_gt, lane_mask.astype(np.float32))
 
+            # Compute distance transform for centerness calculation
             lane_distance = cv2.distanceTransform(
                 (1 - lane_mask).astype(np.uint8),
                 cv2.DIST_L2,
                 cv2.DIST_MASK_PRECISE
             )
-            half_thickness = max(thickness / 2.0, 1e-6)
-            lane_centerness = 1.0 - (lane_distance / half_thickness)
-            lane_centerness = np.clip(lane_centerness, 0.0, 1.0)
-            centerness_gt = np.maximum(centerness_gt, lane_centerness.astype(np.float32))
+            # Compute centerness: 1.0 at lane center, decaying to 0.0 at edges
+            # Use half_thickness as the decay scale
+            half_thickness = max(thickness / 2.0, 1e-6)  # Avoid division by zero
+            lane_centerness = 1.0 - np.clip(lane_distance / half_thickness, 0.0, 1.0)
+            lane_centerness = np.clip(lane_centerness, 0.0, 1.0).astype(np.float32)
+            # Take maximum across all lanes (multi-lane overlap handling)
+            centerness_gt = np.maximum(centerness_gt, lane_centerness)
         
         return cls_gt, centerness_gt, theta_gt, r_gt
     
