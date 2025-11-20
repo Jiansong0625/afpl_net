@@ -205,6 +205,14 @@ def format_afplnet_output(pred_dict, cfg):
             if len(points) < min_points:
                 continue
             
+            # Map coordinates from resized image space to original image space
+            # This is critical for evaluation which expects original image coordinates
+            if hasattr(cfg, 'ori_img_w') and hasattr(cfg, 'ori_img_h') and hasattr(cfg, 'cut_height'):
+                # x: scale from img_w to ori_img_w
+                points[:, 0] = points[:, 0] * (cfg.ori_img_w / cfg.img_w)
+                # y: scale from img_h to (ori_img_h - cut_height), then add cut_height offset
+                points[:, 1] = points[:, 1] * ((cfg.ori_img_h - cfg.cut_height) / cfg.img_h) + cfg.cut_height
+            
             # Sort by y-coordinate (top to bottom) - CRITICAL for CULane format
             sort_idx = np.argsort(points[:, 1])
             points = points[sort_idx]
